@@ -68,8 +68,8 @@ dotnet publish -c Release -o app   # app\KeyboardClick.exe を生成
 - 状態表示: 右Ctrl=左/ドラッグ, 右Shift=右クリック (ON時)
 
 ## 状態 (最終確認)
-- KeyboardClick プロセス稼働中 (GUI パネル表示版 = バルーン有り・起動時表示の旧版)
-- ソースはバルーン廃止 + トレイ常駐化 (起動時非表示) 済み・Debug ビルド成功 (Release 再公開は未実施)
+- KeyboardClick プロセス稼働中 (PID 18660 / トレイ常駐版 = 起動時非表示・バルーン廃止・X でトレイへ隠れる)
+- KeyboardClick-Watch タスク: pwsh7 実行で登録済み (1分毎)
 - 旧 AHK タスクは解除済み、AHK 停止済み。AHK ファイルは互換のため残置 (`startup-ahk.ps1`)
 
 ## 今後の TODO (提案)
