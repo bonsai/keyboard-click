@@ -54,6 +54,20 @@ internal sealed class AppContext : ApplicationContext
     private bool _shuttingDown;
 
     public bool RemapEnabled { get; private set; } = true;
+    public bool IsShuttingDown => _shuttingDown;
+
+    public void ShowPanel()
+    {
+        if (_form == null)
+        {
+            return;
+        }
+        // 表示のたびにプライマリ画面の右下へ再配置
+        var wa = Screen.PrimaryScreen?.WorkingArea ?? Rectangle.Empty;
+        _form.Location = new Point(wa.Right - _form.Width - 16, wa.Bottom - _form.Height - 16);
+        _form.Show();
+        _form.Activate();
+    }
 
     public AppContext()
     {
@@ -72,6 +86,7 @@ internal sealed class AppContext : ApplicationContext
         };
 
         var menu = new ContextMenuStrip();
+        menu.Items.Add("操作パネルを表示", null, (_, _) => ShowPanel());
         menu.Items.Add("フック再装着", null, (_, _) => ReinstallHook());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("終了", null, (_, _) => {
@@ -79,7 +94,7 @@ internal sealed class AppContext : ApplicationContext
             Application.Exit();
         });
         _notify.ContextMenuStrip = menu;
-        _notify.DoubleClick += (_, _) => ReinstallHook();
+        _notify.DoubleClick += (_, _) => ShowPanel();
 
         _hookDelegate = HookCallback;
         ReinstallHook();
@@ -90,8 +105,7 @@ internal sealed class AppContext : ApplicationContext
         // トレイアイコンの自己修復: シェルに消されたり幽霊化するのを防ぐため30秒毎に再登録
         _trayNudge = new ThreadingTimer(_ => NudgeTray(), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
 
-        _form = new MainForm(this);
-        _form.Show();
+        _form = new MainForm(this); // 起動時は非表示 (トレイ常駐のみ)
 
         WriteLog("起動しました (PID=" + Environment.ProcessId + ")");
     }
@@ -390,8 +404,15 @@ internal sealed class MainForm : Form
 
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
-        // 窓を閉じたらアプリ終了 (トレイの奥に隠れさせない)
-        _owner.RequestExit();
+        // X / Alt+F4 で閉じる = トレイへ隠す (アプリは継続)
+        // 終了はトレイメニュー / パネル「終了」のみ
+        if (!_owner.IsShuttingDown)
+        {
+            e.Cancel = true;
+            Hide();
+            return;
+        }
+        base.OnFormClosing(e);
     }
 }
 
